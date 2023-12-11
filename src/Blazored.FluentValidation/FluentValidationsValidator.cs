@@ -16,6 +16,7 @@ public class FluentValidationValidator : ComponentBase
     [Parameter] public IValidator? Validator { get; set; }
     [Parameter] public bool DisableAssemblyScanning { get; set; }
     [Parameter] public Action<ValidationStrategy<object>>? Options { get; set; }
+    [Parameter] public EventCallback Validated { get; set; }
     internal Action<ValidationStrategy<object>>? ValidateOptions { get; set; }
 
     public bool Validate(Action<ValidationStrategy<object>>? options = null)
@@ -29,7 +30,9 @@ public class FluentValidationValidator : ComponentBase
 
         try
         {
-            return CurrentEditContext.Validate();
+            var isValid = CurrentEditContext.Validate();
+            OnValidatedAsync();
+            return isValid;
         }
         finally
         {
@@ -61,12 +64,22 @@ public class FluentValidationValidator : ComponentBase
             }
 
             await (Task<ValidationResult>) asyncValidationTask;
+            var isValid = !CurrentEditContext.GetValidationMessages().Any();
+            await OnValidatedAsync();
 
-            return !CurrentEditContext.GetValidationMessages().Any();
+            return isValid;
         }
         finally
         {
             ValidateOptions = null;
+        }
+    }
+
+    protected internal virtual async Task OnValidatedAsync()
+    {
+        if (Validated.HasDelegate)
+        {
+            await Validated.InvokeAsync(this);
         }
     }
 

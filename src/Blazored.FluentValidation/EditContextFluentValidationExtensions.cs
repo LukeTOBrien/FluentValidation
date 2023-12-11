@@ -23,7 +23,7 @@ public static class EditContextFluentValidationExtensions
             async (sender, _) => await ValidateModel((EditContext)sender!, messages, serviceProvider, disableAssemblyScanning, fluentValidationValidator, validator);
 
         editContext.OnFieldChanged +=
-            async (_, eventArgs) => await ValidateField(editContext, messages, eventArgs.FieldIdentifier, serviceProvider, disableAssemblyScanning, validator);
+            async (_, eventArgs) => await ValidateField(editContext, messages, eventArgs.FieldIdentifier, serviceProvider, disableAssemblyScanning, fluentValidationValidator, validator);
     }
 
     private static async Task ValidateModel(EditContext editContext,
@@ -64,6 +64,7 @@ public static class EditContextFluentValidationExtensions
             }
 
             editContext.NotifyValidationStateChanged();
+            await fluentValidationValidator.OnValidatedAsync();
         }
     }
 
@@ -72,6 +73,7 @@ public static class EditContextFluentValidationExtensions
         FieldIdentifier fieldIdentifier,
         IServiceProvider serviceProvider,
         bool disableAssemblyScanning,
+        FluentValidationValidator fluentValidationValidator,
         IValidator? validator = null)
     {
         var properties = new[] { fieldIdentifier.FieldName };
@@ -87,6 +89,7 @@ public static class EditContextFluentValidationExtensions
             messages.Add(fieldIdentifier, validationResults.Errors.Select(error => error.ErrorMessage));
 
             editContext.NotifyValidationStateChanged();
+            await fluentValidationValidator.OnValidatedAsync();
         }
     }
 
